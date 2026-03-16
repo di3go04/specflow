@@ -62,15 +62,16 @@ async function ejecutarLogin() {
 
     // --- ADMIN BYPASS LOGIC (PRIORIDAD ABSOLUTA) ---
     if (email === 'admin@gmail.com' && password === 'admin') {
-        localStorage.setItem('sf_admin_session', 'true');
+        const adminSession = { email: 'admin@gmail.com', role: 'admin', isAuthenticated: true };
+        localStorage.setItem('specflow_session', JSON.stringify(adminSession));
         showToast("ACCESO MAESTRO DETECTADO");
         unlockApp();
         return; // Fin de ejecución para admin
     }
 
     // Validación de Bloqueo (Solo usuarios estándar)
-    const { data: userProfile } = await supabaseClient.from('users').select('is_blocked').eq('email', email).single();
-    if (userProfile && userProfile.is_blocked) {
+    const { data: userProfile } = await supabaseClient.from('perfiles').select('estado').eq('email', email).single();
+    if (userProfile && userProfile.estado === 'bloqueado') {
         showToast("CUENTA BLOQUEADA: ACCESO REVOCADO");
         return;
     }
@@ -82,11 +83,18 @@ async function ejecutarLogin() {
         return;
     }
 
-    // Validación de Verificación (Solo usuarios estándar)
-    if (data.user && !data.user.email_confirmed_at) {
-        await supabaseClient.auth.signOut();
-        document.getElementById('modal-verification').style.display = 'flex';
-        return;
+    if (data.user) {
+        // Excepción Admin: Bypass de verificación de correo
+        if (email !== 'admin@gmail.com' && !data.user.email_confirmed_at) {
+            await supabaseClient.auth.signOut();
+            showToast("VERIFICA TU CORREO PARA ENTRAR");
+            document.getElementById('modal-verification').style.display = 'flex';
+            return;
+        }
+
+        const userSession = { email: data.user.email, role: 'user', isAuthenticated: true };
+        localStorage.setItem('specflow_session', JSON.stringify(userSession));
+        unlockApp();
     }
 }
 
@@ -101,7 +109,8 @@ function unlockApp() {
     document.getElementById('app-content').style.display = 'block';
     
     // Verificar sesión admin local
-    const isAdmin = localStorage.getItem('sf_admin_session') === 'true';
+    const session = JSON.parse(localStorage.getItem('specflow_session'));
+    const isAdmin = session && session.role === 'admin';
     const adminBtn = document.getElementById('btn-admin-panel');
     if (adminBtn) adminBtn.style.display = isAdmin ? 'inline-block' : 'none';
 
@@ -454,15 +463,18 @@ function showToast(message) {
     }, 3000);
 }
 
-function logoutUser() { 
-    localStorage.removeItem('sf_admin_session');
-    supabaseClient.auth.signOut().then(() => location.reload()); 
+async function cerrarSesionMaster() {
+    localStorage.removeItem('specflow_session');
+    await supabaseClient.auth.signOut();
+    location.reload(); 
 }
+
+function logoutUser() { cerrarSesionMaster(); }
 
 // 12. LÓGICA DE ADMINISTRADOR (NÚCLEO)
 function openAdminModal() {
     renderAdminPanel();
-    fetchAdminUsers(); // Cargar identidades
+    cargarIdentidades(); // Cargar identidades reales
     const modal = document.getElementById('admin-modal');
     if (modal) modal.style.display = 'flex';
 }
@@ -474,18 +486,31 @@ function switchAdminTab(tabName) {
     event.currentTarget.classList.add('active');
     document.getElementById(`admin-tab-${tabName}`).classList.add('active');
     
-    if (tabName === 'identities') fetchAdminUsers();
+    if (tabName === 'identities') cargarIdentidades();
 }
 
-async function fetchAdminUsers() {
-    const { data, error } = await supabaseClient.from('users').select('*').order('created_at', { ascending: false });
-    if (error) return console.error(error);
-
-    const counter = document.getElementById('admin-user-count');
-    if (counter) counter.innerText = data.length;
-
+async function cargarIdentidades() {
     const container = document.getElementById('admin-users-content');
     if (!container) return;
+
+    // Estado inicial de carga técnica
+    container.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--neon-aqua); letter-spacing: 2px;">SINCRONIZANDO NÚCLEO...</div>`;
+
+    const { data, error } = await supabaseClient.from('perfiles').select('*').order('created_at', { ascending: false });
+    
+    if (error) {
+        console.error(error);
+        container.innerHTML = `<div style="text-align:center; color: #ff3e3e;">ERROR DE SINCRONIZACIÓN TÉCNICA</div>`;
+        return;
+    }
+
+    const counter = document.getElementById('admin-user-count');
+    if (counter) counter.innerText = `USUARIOS VINCULADOS: ${data.length}`;
+
+    if (data.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 2rem; color: #555;">NO SE DETECTAN IDENTIDADES EN EL NÚCLEO</div>`;
+        return;
+    }
 
     let html = `
         <table class="admin-table">
@@ -494,28 +519,30 @@ async function fetchAdminUsers() {
                     <th>Identidad / Email</th>
                     <th>Vinculación</th>
                     <th>Estado</th>
-                    <th>Seguridad</th>
+                    <th>Acción Segura</th>
                 </tr>
             </thead>
             <tbody>
     `;
 
     data.forEach(user => {
-        const statusClass = user.is_blocked ? 'blocked' : 'active';
-        const statusText = user.is_blocked ? 'REVOCADO' : 'ACTIVO';
-        const actionText = user.is_blocked ? 'HIBILITAR' : 'REVOCAR ACCESO';
-        const actionClass = user.is_blocked ? 'activate' : 'revoke';
+        const isBlocked = user.estado === 'bloqueado';
+        const statusClass = isBlocked ? 'blocked' : 'active';
+        const statusText = isBlocked ? 'REVOCADO' : 'ACTIVO';
+        const actionText = isBlocked ? 'HABILITAR' : 'BLOQUEAR'; // Cambiado a 'BLOQUEAR'
+        const actionClass = isBlocked ? 'activate' : 'revoke';
+        const lastConn = user.ultima_conexion ? new Date(user.ultima_conexion).toLocaleString() : new Date().toLocaleString();
 
         html += `
             <tr>
                 <td>
-                    <div style="font-weight: bold; color: #eee;">${user.email}</div>
+                    <div style="font-weight: bold; color: #eee; font-family: monospace;">${user.email}</div>
                     <div style="font-size: 0.6rem; color: #444;">ID: ${user.id}</div>
                 </td>
-                <td><span style="font-family: monospace; color: #666;">${new Date(user.created_at).toLocaleDateString()}</span></td>
+                <td><span style="color: #888;">${lastConn}</span></td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>
-                    <button class="btn-admin-action ${actionClass}" onclick="toggleUserBlock('${user.id}', ${user.is_blocked})">
+                    <button class="btn-admin-action ${actionClass}" onclick="toggleUserBlock('${user.id}', '${user.estado}')">
                         ${actionText}
                     </button>
                 </td>
@@ -527,11 +554,15 @@ async function fetchAdminUsers() {
     container.innerHTML = html;
 }
 
+// Alias para compatibilidad si se llama desde otros sitios
+async function fetchAdminUsers() { await cargarIdentidades(); }
+
 async function toggleUserBlock(userId, currentStatus) {
-    const { error } = await supabaseClient.from('users').update({ is_blocked: !currentStatus }).eq('id', userId);
+    const newStatus = currentStatus === 'activo' ? 'bloqueado' : 'activo';
+    const { error } = await supabaseClient.from('perfiles').update({ estado: newStatus }).eq('id', userId);
     if (!error) {
-        showToast(currentStatus ? "Acceso Restablecido" : "Identidad Revocada");
-        fetchAdminUsers();
+        showToast(newStatus === 'activo' ? "IDENTIDAD HABILITADA" : "IDENTIDAD BLOQUEADA");
+        cargarIdentidades();
     }
 }
 
@@ -618,28 +649,64 @@ function togglePasswordVisibility(inputId, icon) {
     }
 }
 
+// --- PERSISTENCIA Y SEGURIDAD MASTER ---
+async function verificarSesion() {
+    const session = JSON.parse(localStorage.getItem('specflow_session'));
+    
+    // 1. Caso Admin (Bypass)
+    if (session && session.role === 'admin') {
+        unlockApp();
+        return;
+    }
+
+    // 2. Caso Usuario Estándar o Auth Central
+    const { data: { session: sbSession } } = await supabaseClient.auth.getSession();
+    
+    if (sbSession) {
+        // Enforce confirmación de correo al recuperar sesión
+        if (sbSession.user.email !== 'admin@gmail.com' && !sbSession.user.email_confirmed_at) {
+            localStorage.removeItem('specflow_session');
+            await supabaseClient.auth.signOut();
+            lockApp();
+            return;
+        }
+
+        const userSession = { email: sbSession.user.email, role: 'user', isAuthenticated: true };
+        localStorage.setItem('specflow_session', JSON.stringify(userSession));
+        unlockApp();
+    } else if (session && session.isAuthenticated) {
+        // Respaldo de sesión local si supabase aún no responde
+        unlockApp();
+    } else {
+        lockApp();
+    }
+}
+
 // 10. INICIALIZACIÓN FINAL
 document.addEventListener('DOMContentLoaded', () => {
+    verificarSesion(); // Carga de persistencia inteligente
+
     const bR = document.getElementById('btn-ejecutar-registro');
     if (bR) bR.onclick = ejecutarRegistro;
     const bL = document.getElementById('btn-login');
     if (bL) bL.onclick = ejecutarLogin;
 
-
-
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            unlockApp();
-            renderComparisonSection();
-        } else {
-            lockApp();
-        }
-    });
+        // Sincronización pero respetando el bypass del admin
+        const local = JSON.parse(localStorage.getItem('specflow_session'));
+        if (local && local.role === 'admin') return; 
 
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-            unlockApp();
-            renderComparisonSection();
+        if (event === 'SIGNED_OUT') {
+            localStorage.removeItem('specflow_session');
+            lockApp();
+        } else if (session) {
+            // Chequeo de seguridad al vuelo
+            if (session.user.email_confirmed_at) {
+                const userSession = { email: session.user.email, role: 'user', isAuthenticated: true };
+                localStorage.setItem('specflow_session', JSON.stringify(userSession));
+                unlockApp();
+            }
         }
     });
 });
+

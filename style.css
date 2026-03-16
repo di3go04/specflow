@@ -974,7 +974,7 @@ section#reviews-section { margin-top: 4rem !important; padding-top: 4rem !import
     text-transform: uppercase;
 }
 
-.status-badge.active { background: rgba(0, 255, 0, 0.1); color: #00ff00; }
+.status-badge.active { background: rgba(0, 242, 255, 0.1); color: var(--neon-aqua); border: 1px solid rgba(0, 242, 255, 0.3); }
 .status-badge.blocked { background: rgba(255, 0, 0, 0.1); color: #ff3e3e; border: 1px solid #ff3e3e; }
 
 /* TOAST NOTIFICATIONS */
