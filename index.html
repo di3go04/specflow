@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpecFlow Pro | Final Master Build</title>
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <!-- MODAL DE AUTORIZACIÓN (Lock Inicial) -->
+    <div id="modal-auth">
+        <div class="auth-box cyber-dark-auth">
+            <div class="auth-header">
+                <h1 id="auth-main-title" class="neon-cyan-text">INICIAR SESIÓN</h1>
+                <p id="auth-toggle-subtitle" onclick="toggleAuth('register')" class="auth-subtitle">REGISTRARSE</p>
+            </div>
+
+            <!-- Panel Login -->
+            <div id="login-panel">
+                <div class="input-group floating">
+                    <input type="email" id="log-email" class="cyber-input" placeholder=" " required>
+                    <label>CORREO ELECTRÓNICO</label>
+                </div>
+                <div class="input-group floating password-wrapper">
+                    <input type="password" id="log-password" class="cyber-input" placeholder=" " required>
+                    <label>CONTRASEÑA</label>
+                    <i class="fa-solid fa-eye eye-toggle" onclick="togglePasswordVisibility('log-password', this)"></i>
+                </div>
+                <button type="button" id="btn-login" class="btn-master btn-glow-cyan auth-submit-btn">ENTRAR AL SISTEMA</button>
+            </div>
+
+            <!-- Panel Registro -->
+            <div id="register-panel" style="display: none;">
+                <div class="input-group floating">
+                    <input type="email" id="reg-email" class="cyber-input" placeholder=" " required>
+                    <label>CORREO ELECTRÓNICO</label>
+                </div>
+                <div class="input-group floating password-wrapper">
+                    <input type="password" id="reg-password" class="cyber-input" placeholder=" " required>
+                    <label>CONTRASEÑA</label>
+                    <i class="fa-solid fa-eye eye-toggle" onclick="togglePasswordVisibility('reg-password', this)"></i>
+                </div>
+                <button type="button" id="btn-ejecutar-registro" class="btn-master btn-glow-cyan auth-submit-btn">CREAR CUENTA</button>
+            </div>
+            
+            <p id="reg-status" style="display: none; text-align: center; margin-top: 1rem; color: var(--neon-aqua); font-size: 0.8rem;"></p>
+        </div>
+    <div id="modal-verification" class="modal-overlay">
+        <div class="modal-content cyber-dark-auth" style="max-width: 450px; text-align: center;">
+            <div class="auth-header">
+                <i class="fa-solid fa-envelope-open-text" style="font-size: 3rem; color: var(--neon-aqua); margin-bottom: 1.5rem;"></i>
+                <h1 class="neon-cyan-text" style="font-size: 1.5rem;">VERIFICACIÓN REQUERIDA</h1>
+            </div>
+            <p style="color: #666; margin: 1.5rem 0; line-height: 1.6;">
+                Tu perfil de entusiasta aún no está activo.<br>
+                <span style="color: #eee;">Revisa tu bandeja de entrada</span> para confirmar tu correo y desbloquear el acceso al ecosistema SpecFlow.
+            </div>
+            <button class="btn-master btn-glow-cyan" onclick="closeModal('modal-verification')" style="width: 100%; margin-top: 1rem;">ENTENDIDO</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div id="app-content">
+        <nav>
+            <a href="#" class="logo" onclick="navigateTo('hero')">SPECFLOW</a>
+            <div class="nav-links">
+                <a href="#" onclick="navigateTo('hero')">Inicio</a>
+                <a href="#" onclick="navigateTo('hardware')">Hardware</a>
+                <a href="#" onclick="navigateTo('perifericos')">PC y Periféricos</a>
+                <a href="#" onclick="navigateTo('moviles')">Móviles</a>
+                <a href="#" onclick="navigateTo('comparator')">Comparador</a>
+                <a href="#" onclick="openCart()" style="color: var(--neon-aqua); position: relative;">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="cart-count" style="position: absolute; top: -10px; right: -15px; font-size: 0.6rem; background: #fff; color: #000; padding: 2px 5px; border-radius: 10px; font-weight: 900;">0</span>
+                </a>
+                <a href="#" id="btn-admin-panel" onclick="openAdminModal()" style="display: none; color: var(--neon-aqua);"><i class="fa-solid fa-gear"></i></a>
+                <a href="#" onclick="logoutUser()" style="border: 1px solid #222; padding: 5px 10px; border-radius: 4px; color: #555;"><i class="fa-solid fa-power-off"></i></a>
+            </div>
+        </nav>
+
+        <main>
+            <section id="hero-section" class="active hero-main">
+                <div class="hero-content">
+                    <h1 class="glitch-title" data-text="ESPECIFICACIONES TÉCNICAS Y ADQUISICIÓN DE HARDWARE DE ÉLITE">
+                        ESPECIFICACIONES TÉCNICAS Y <br>ADQUISICIÓN DE HARDWARE DE ÉLITE
+                    </h1>
+                    <p class="hero-description">
+                        Bienvenido al ecosistema SpecFlow, la plataforma definitiva para entusiastas del hardware. Aquí, la precisión técnica se encuentra con el rendimiento. Analiza arquitecturas, compara componentes cara a cara y accede a una curaduría exclusiva de los mejores dispositivos del mercado colombiano.
+                    </p>
+                    
+                    <div class="value-pillars">
+                        <div class="pillar">
+                            <i class="fa-solid fa-bolt-lightning"></i>
+                            <div><strong>Análisis</strong><span>Comparativas en tiempo real</span></div>
+                        </div>
+                        <div class="pillar">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <div><strong>Calidad</strong><span>Hardware verificado de élite</span></div>
+                        </div>
+                        <div class="pillar">
+                            <i class="fa-solid fa-robot"></i>
+                            <div><strong>Soporte IA</strong><span>Asistencia técnica 24/7</span></div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="hero-overlay-grid"></div>
+            </section>
+
+            <!-- Categorías -->
+            <section id="hardware-section">
+                <div class="section-title">HARDWARE <span>CORE</span></div>
+                <div class="section-guide-banner">
+                    "Analiza procesadores y gráficas de alto rendimiento. Haz clic en 'Detalles' para ver la potencia técnica o 'Añadir' para tu próxima build."
+                </div>
+                <div id="hardware-grid" class="product-grid"></div>
+            </section>
+
+            <!-- ANALIZADOR DE HARDWARE / CENTRO DE ANÁLISIS -->
+            <section id="comparator-section">
+                <div class="section-title">CENTRO DE <span>ANÁLISIS TÉCNICO</span></div>
+                <div class="section-guide-banner">
+                    "Selecciona dos productos del catálogo para realizar un análisis comparativo 'Versus' (VS). Compara la potencia de Procesadores, RAM y Cámaras en tiempo real."
+                </div>
+                <div class="comparator-container">
+                    <div id="slot-0" class="comp-slot">
+                        <div class="slot-placeholder">Esperando producto...</div>
+                    </div>
+                    
+                    <div class="vs-divider">VS</div>
+                    
+                    <div id="slot-1" class="comp-slot">
+                        <div class="slot-placeholder">Esperando producto...</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 3rem;">
+                    <button id="btn-start-analysis" class="btn-master" style="width: auto; padding: 1.5rem 4rem;" onclick="startAnalysis()">INICIAR ANÁLISIS</button>
+                </div>
+            </section>
+
+            <section id="perifericos-section">
+                <div class="section-title">PC Y <span>PERIFÉRICOS</span></div>
+                <div class="section-guide-banner">
+                    "Equipa tu setup con marcas líderes. Revisa la compatibilidad y añade periféricos profesionales a tu carrito."
+                </div>
+                <div id="perifericos-grid" class="product-grid"></div>
+            </section>
+
+            <section id="moviles-section">
+                <div class="section-title">MÓVILES <span>ELITE</span></div>
+                <div class="section-guide-banner">
+                    "Compara los smartphones más potentes del mercado. Selecciona dos modelos para ver su comparativa técnica en tiempo real."
+                </div>
+                <div id="moviles-grid" class="product-grid"></div>
+            </section>
+
+            <!-- INFORME TÉCNICO -->
+            <section id="reviews-section" style="display: block; margin-top: 10rem; border-top: 1px solid #111; padding-top: 8rem;">
+                <div class="section-title" style="font-size: 2rem;">INFORME <span>TÉCNICO</span></div>
+                <form action="https://formspree.io/f/mpqyydbr" method="POST" class="auth-box" style="margin: 0 auto; max-width: 600px; border-color: #222;">
+                    <div class="input-group">
+                        <label>Nombre Completo</label>
+                        <input type="text" name="nombre" class="cyber-input" placeholder="Tu identidad..." required>
+                    </div>
+                    <div class="input-group">
+                        <label>Correo Electrónico</label>
+                        <input type="email" name="email" class="cyber-input" placeholder="buzon@intel.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Detalle Técnico / Sugerencia</label>
+                        <textarea name="detalle_tecnico" class="cyber-input" style="height: 120px;" placeholder="Describe tu requerimiento o recomendación técnica..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-master btn-glow-cyan" style="width: 100%;">ENVIAR INFORME</button>
+                </form>
+            </section>
+        </main>
+
+        <footer style="text-align: center; padding: 6rem; color: #1a1a1a; font-size: 0.6rem; letter-spacing: 8px; text-transform: uppercase;">
+            SpecFlow Core Systems © 2026. All Rights Reserved.
+        </footer>
+    </div>
+
+    <!-- COMPARISON BAR -->
+    <div id="compare-bar">
+        <div class="compare-slots" id="compare-slots">
+            <!-- Slots dinámicos -->
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <p id="compare-text" style="color: #555; font-size: 0.7rem; text-transform: uppercase; font-weight: 900;">Selecciona 2 productos</p>
+            <button class="btn-cyber" id="btn-compare-now" style="width: auto; padding: 0.6rem 2rem; font-size: 0.7rem; border-radius: 30px; display: none;" onclick="openComparisonModal()">Comparar Ahora</button>
+            <button class="btn-secondary" style="border: none; color: #444;" onclick="clearComparison()">Limpiar</button>
+        </div>
+    </div>
+
+    <!-- DETAILS MODAL -->
+    <div id="details-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('details-modal')">&times;</span>
+            <div id="details-content"></div>
+        </div>
+    </div>
+
+    <!-- COMPARISON MODAL -->
+    <div id="comparison-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 1000px;">
+            <span class="close-modal" onclick="closeModal('comparison-modal')">&times;</span>
+            <h2 style="color: var(--neon-aqua); text-align: center; margin-bottom: 2rem; letter-spacing: 5px;">ANÁLISIS COMPARATIVO</h2>
+            <div id="comparison-content"></div>
+        </div>
+    </div>
+
+    <!-- CART MODAL (Resumen de Adquisición) -->
+    <div id="cart-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeModal('cart-modal')">&times;</span>
+            <h2 style="color: var(--neon-aqua); text-align: center; margin-bottom: 2rem; letter-spacing: 5px;">RESUMEN DE ADQUISICIÓN</h2>
+            <div id="cart-summary-content">
+                <!-- Listado dinámico -->
+            </div>
+            <div style="margin-top: 2rem; border-top: 1px solid #1a1a1a; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: white; font-size: 1.1rem;">TOTAL: <span id="cart-total-value" style="color: var(--neon-aqua);">COP $0</span></h3>
+                <button class="btn-cyber" onclick="proceedToCheckout()">Finalizar Adquisición</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkout-modal" class="modal-overlay">
+        <div class="auth-box" style="max-width: 450px;">
+            <h2 style="color: var(--neon-aqua); margin-bottom: 2rem; text-align: center; font-size: 1.2rem;">PROCESAR ADQUISICIÓN</h2>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button class="btn-cyber" onclick="finishOrder('Crédito')">TARJETA CRÉDITO</button>
+                <button class="btn-cyber" onclick="finishOrder('PSE')">PSE / DÉBITO</button>
+                <button class="btn-cyber" onclick="finishOrder('Efectivo')">EFECTIVO / PUNTOS</button>
+                <button class="btn-secondary" style="margin-top: 1rem;" onclick="closeModal('checkout-modal')">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SELECTOR MODAL -->
+    <div id="selector-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close-modal" onclick="closeModal('selector-modal')">&times;</span>
+            <h2 style="color: var(--neon-aqua); margin-bottom: 2rem; letter-spacing: 3px;">SELECCIONAR PRODUCTO</h2>
+            <div id="selector-grid" class="product-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL (PANEL NÚCLEO) -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 1100px;">
+            <span class="close-modal" onclick="closeModal('admin-modal')">&times;</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #111; padding-bottom: 1rem;">
+                <div>
+                    <h2 style="color: var(--neon-aqua); letter-spacing: 5px; margin: 0;">PANEL NÚCLEO</h2>
+                    <div style="color: #666; font-size: 0.6rem; text-transform: uppercase; margin-top: 5px;">
+                        ESTADO: <span style="color: #00ff00;">CONEXIÓN MAESTRA</span> | 
+                        USUARIOS: <span id="admin-user-count" style="color: var(--neon-aqua);">0</span>
+                    </div>
+                </div>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchAdminTab('catalog')">CATÁLOGO</button>
+                    <button class="tab-btn" onclick="switchAdminTab('identities')">IDENTIDADES</button>
+                </div>
+            </div>
+
+            <!-- Tab: Catálogo -->
+            <div id="admin-tab-catalog" class="admin-tab-panel active">
+                <div id="admin-panel-content">
+                    <!-- Tabla de productos -->
+                </div>
+            </div>
+
+            <!-- Tab: Identidades -->
+            <div id="admin-tab-identities" class="admin-tab-panel">
+                <div id="admin-users-content">
+                    <!-- Tabla de usuarios -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANALYSIS RESULTS MODAL (FULL SCREEN) -->
+    <div id="analysis-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+            <span class="close-modal" onclick="closeModal('analysis-modal')">&times;</span>
+            <h2 style="color: var(--neon-aqua); text-align: center; margin-bottom: 2rem; letter-spacing: 5px;">ANÁLISIS COMPARATIVO</h2>
+            <div id="analysis-table-container">
+                <!-- Tabla dinámica -->
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+    (function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="UvO382svS_kbeWlUNvhgb";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
